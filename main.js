@@ -1,11 +1,11 @@
 const fs = require('fs');
-const template = require('./lib/template.js');
 const bodyParser = require('body-parser');
 const compression = require('compression');
-const topicRouter = require('./routes/topic');
 const helmet = require('helmet');
 
 const express = require('express');
+const session = require('express-session');
+const FileStore = require('session-file-store')(session);
 const app = express();
 const port = 3000;
 
@@ -13,6 +13,16 @@ app.use(helmet());
 app.use(express.static('public'));
 app.use(bodyParser.urlencoded({ extended: false}));
 app.use(compression());
+
+app.use(session({
+  HttpOnly: true,
+  secure: true,
+  secret: 'keyboard cat',
+  resave: false,
+  saveUninitialized: true,
+  store: new FileStore()
+}));
+
 app.get('*', function(request, response, next) {
   fs.readdir('./data', function(error, filelist){
     request.list = filelist;
@@ -20,21 +30,13 @@ app.get('*', function(request, response, next) {
   });
 });
 
-app.get('/', (request, response) => {
-  var title = 'Welcome';
-  var description = 'Hello, Node.js';
-  var list = template.list(request.list);
-  var html = template.HTML(title, list,
-    `
-    <h2>${title}</h2>${description}
-    <img src="/images/hello.jpg" style="width:300px; display: block; margin-top:10px;">
-    `,
-    `<a href="/topic/create">create</a>`
-  );
-  response.send(html);
-});
+const topicRouter = require('./routes/topic');
+const indexRouter = require('./routes/index');
+const authRouter = require('./routes/auth');
 
+app.use('/', indexRouter);
 app.use('/topic', topicRouter);
+app.use('/auth', authRouter);
 
 app.use(function(req, res, next) {
   res.status(404).send(`Sorry can't find that!`);
@@ -46,5 +48,5 @@ app.use(function (err, req, res, next) {
 });
 
 app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`);
+  console.log(`App listening at http://localhost:${port}`);
 });
