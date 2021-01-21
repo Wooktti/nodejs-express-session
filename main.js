@@ -15,12 +15,14 @@ app.use(bodyParser.urlencoded({ extended: false}));
 app.use(compression());
 
 app.use(session({
-  HttpOnly: true,
-  secure: true,
   secret: 'keyboard cat',
   resave: false,
   saveUninitialized: true,
-  store: new FileStore()
+  store: new FileStore(),
+  cookie: {
+    httpOnly: true,
+    secure: false,
+  }
 }));
 
 app.get('*', function(request, response, next) {
